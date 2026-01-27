@@ -2,31 +2,50 @@
 
 --Build giga.transactions from latest deduped silver view
 
---Clear and reload
-TRUNCATE TABLE giga.transactions;
+--Incremental MERGE for giga.transactions
+MERGE giga.transactions T
+USING (
+  SELECT *
+  FROM silver.transactions_latest
+  WHERE ingestion_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 DAY)
+) S
+ON T.transaction_id = S.transaction_id
 
-INSERT INTO giga.transactions (
-  transaction_id,
-  sale_date,
-  product_id,
-  store_id,
-  customer_id,
-  quantity,
-  sale_amount,
-  is_return,
-  ingestion_timestamp
-)
-SELECT
-  transaction_id,
-  sale_date,
-  product_id,
-  store_id,
-  customer_id,
-  quantity,
-  sale_amount,
-  is_return,
-  ingestion_timestamp
-FROM silver.transactions_latest;
+WHEN MATCHED
+  AND S.ingestion_timestamp > T.ingestion_timestamp THEN
+  UPDATE SET
+    sale_date = S.sale_date,
+    product_id = S.product_id,
+    store_id = S.store_id,
+    customer_id = S.customer_id,
+    quantity = S.quantity,
+    sale_amount = S.sale_amount,
+    is_return = S.is_return,
+    ingestion_timestamp = S.ingestion_timestamp
+
+WHEN NOT MATCHED THEN
+  INSERT (
+    transaction_id,
+    sale_date,
+    product_id,
+    store_id,
+    customer_id,
+    quantity,
+    sale_amount,
+    is_return,
+    ingestion_timestamp
+  )
+  VALUES (
+    S.transaction_id,
+    S.sale_date,
+    S.product_id,
+    S.store_id,
+    S.customer_id,
+    S.quantity,
+    S.sale_amount,
+    S.is_return,
+    S.ingestion_timestamp
+  );
 
 --Build giga.customer_profiles (current snapshot)
 
