@@ -8,7 +8,6 @@ This repository contains an end-to-end GCP data pipeline design and implementati
 - sql/ : DDL and transformation SQL (Bronze >> Silver >> Gold)
 - validation/ : data quality checks
 - dags/ : Cloud Composer (Airflow) orchestration skeleton
-- src/ : placeholder for Dataflow/Beam pipeline code (optional extension)
 
 ## Key Deliverables
 - Architecture diagram: docs/architecture_diagram.png
